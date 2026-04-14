@@ -2078,6 +2078,10 @@ function renderProfile() {
           <h3 class="card-title">Change Password</h3>
         </div>
         <div class="card-body">
+          <div class="form-group">
+            <label>Current Password</label>
+            <input type="password" id="pw-current" placeholder="Enter your current password">
+          </div>
           <div class="form-row">
             <div class="form-group">
               <label>New Password</label>
@@ -2151,13 +2155,20 @@ function removeLogo() {
 }
 
 async function changePassword() {
+  const currentPw = document.getElementById('pw-current').value;
   const newPw = document.getElementById('pw-new').value;
   const confirmPw = document.getElementById('pw-confirm').value;
+  if (!currentPw) { toast('Enter your current password', 'error'); return; }
   if (!newPw) { toast('Enter a new password', 'error'); return; }
   if (newPw.length < 6) { toast('Password must be at least 6 characters', 'error'); return; }
   if (newPw !== confirmPw) { toast('Passwords do not match', 'error'); return; }
+  // Verify current password by re-signing in
+  const { data: { user } } = await supabaseClient.auth.getUser();
+  const { error: signInError } = await supabaseClient.auth.signInWithPassword({ email: user.email, password: currentPw });
+  if (signInError) { toast('Current password is incorrect', 'error'); return; }
   const { error } = await supabaseClient.auth.updateUser({ password: newPw });
   if (error) { toast(error.message, 'error'); return; }
+  document.getElementById('pw-current').value = '';
   document.getElementById('pw-new').value = '';
   document.getElementById('pw-confirm').value = '';
   toast('Password updated successfully');
